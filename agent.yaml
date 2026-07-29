@@ -1,0 +1,36 @@
+# Agent Manifest Definition for ADK & Gemini Enterprise Deployment
+name: sharepoint_knowledge_agent
+display_name: "SharePoint ACL-Aware Knowledge Agent"
+description: "Custom ADK Agent integrating Veer Muchandi's OAuth/ACL token propagation pattern for secure SharePoint queries via Discovery Engine."
+
+version: "1.0.0"
+entrypoint: "agent:root_agent"
+
+# Environment Variables Configuration
+env:
+  PROJECT_ID: "your-gcp-project-id"
+  PROJECT_NUMBER: "123456789012" # Must use GCP Project Number
+  LOCATION: "global"
+  COLLECTION: "default_collection"
+  ENGINE_ID: "sharepoint-search-engine"
+  AUTH_NAME: "sharepoint_oauth"
+  MODEL_NAME: "gemini-2.0-flash"
+
+# Authorization Configuration for OOTB SharePoint Connector (Veer Muchandi ACL Pattern)
+# Dynamically injects the user's Azure AD OAuth token into ToolContext.state['sharepoint_oauth']
+authorizationConfig:
+  oauthClient:
+    name: "sharepoint_oauth"
+    provider: "AZURE_AD"
+    scopes:
+      - "https://graph.microsoft.com/Files.Read.All"
+      - "https://graph.microsoft.com/Sites.Read.All"
+      - "offline_access"
+
+  # Session State Injection Mapping
+  stateInjection:
+    - targetKey: "sharepoint_oauth"
+      sourceClaim: "access_token"
+
+  # Resource specification using GCP Project Number (e.g. projects/{PROJECT_NUMBER}/locations/{LOCATION}/authorizations/{AUTH_NAME})
+  resource: "projects/123456789012/locations/global/authorizations/sharepoint-oauth-config"

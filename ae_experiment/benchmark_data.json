@@ -1,0 +1,59 @@
+[
+  {
+    "query": "Q3 financial security audit report",
+    "raw_results": [
+      {
+        "document": {
+          "derivedStructData": {
+            "title": "General Employee Onboarding Manual 2026",
+            "link": "https://sharepoint.com/hr/onboarding.pdf",
+            "snippets": [{"snippet": "Welcome to the company. Please ensure your badges are visible at all times in the building."}]
+          }
+        }
+      },
+      {
+        "document": {
+          "derivedStructData": {
+            "title": "Quarterly Financial Security Audit Q3 2026",
+            "link": "https://sharepoint.com/finance/audit_q3_2026.pdf",
+            "snippets": [{"snippet": "Q3 Financial Audit Summary: Total revenue $4.2M, SOC2 compliance verified, zero high-risk findings reported."}]
+          }
+        }
+      },
+      {
+        "document": {
+          "derivedStructData": {
+            "title": "Q3 Financial Audit Draft Notes",
+            "link": "https://sharepoint.com/finance/notes_draft.docx",
+            "snippets": [{"snippet": "Draft notes for Q3 financial audit discussion meeting with external auditors on Tuesday."}]
+          }
+        }
+      }
+    ],
+    "target_top_title": "Quarterly Financial Security Audit Q3 2026"
+  },
+  {
+    "query": "Cloud Architecture Security Gateway Policy",
+    "raw_results": [
+      {
+        "document": {
+          "derivedStructData": {
+            "title": "Office Kitchen Cleaning Schedule",
+            "link": "https://sharepoint.com/ops/kitchen.pdf",
+            "snippets": [{"snippet": "Kitchen refrigerator will be cleaned every Friday at 5 PM."}]
+          }
+        }
+      },
+      {
+        "document": {
+          "derivedStructData": {
+            "title": "GCP Cloud Security Architecture Standard",
+            "link": "https://sharepoint.com/tech/gcp_security.pdf",
+            "snippets": [{"snippet": "Cloud Architecture Gateway Policy: All public ingress endpoints must be protected with IAM OAuth tokens and X-Goog-User-Project headers."}]
+          }
+        }
+      }
+    ],
+    "target_top_title": "GCP Cloud Security Architecture Standard"
+  }
+]
