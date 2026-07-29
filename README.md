@@ -1,22 +1,53 @@
 # 🔐 ADK SharePoint Knowledge Agent (Veer Muchandi ACL Pattern)
 
-A production-ready **Google Cloud Agent Development Kit (ADK 2.x)** agent that securely queries enterprise SharePoint datastores via Google Cloud Discovery Engine.
+[![Google Cloud ADK](https://img.shields.io/badge/Google_Cloud-ADK_2.x-4285F4?logo=googlecloud&logoColor=white)](https://github.com/google/adk-python)
+[![Gemini 2.0 Flash](https://img.shields.io/badge/Model-Gemini_2.0_Flash-8E75B5?logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+[![SharePoint OAuth](https://img.shields.io/badge/Security-Azure_AD_OAuth_ACL-0078D4?logo=microsoftsharepoint&logoColor=white)](https://github.com/VeerMuchandi/rad-skills)
+[![AlphaEvolve Compliant](https://img.shields.io/badge/AlphaEvolve-3--Tier_Evaluator-34A853?logo=google&logoColor=white)](https://github.com/google/alphaevolve)
+
+A production-ready **Google Cloud Agent Development Kit (ADK 2.x)** agent that securely queries enterprise Microsoft SharePoint datastores via Google Cloud Discovery Engine.
 
 This repository implements **Veer Muchandi's OAuth/ACL Token Propagation Pattern**, allowing custom ADK agents to inherit and enforce the calling user's native SharePoint Access Control Lists (ACLs) dynamically at query time.
 
 ---
 
-## 🎯 Key Architectural Objectives & Features
+## 🛑 The Problem: Why This Repository Exists
 
-1. **Native SharePoint ACL Enforcement**: Dynamically extracts the session-injected Azure AD OAuth token from `ToolContext.state[AUTH_NAME]` and passes it to Discovery Engine's REST API (`discoveryengine.googleapis.com`), ensuring users only see documents they are authorized to access.
-2. **Connector Wall & `VertexAiSearchTool` Bypass**: Direct REST client implementation bypasses known product issues (GCP Issues #434712760, #483989453, #484437320) where `VertexAiSearchTool` defaults to Service Account (ADC) credentials.
-3. **Hybrid Auth Fallback**: Automatically uses active session tokens in production environments, while falling back to local **Application Default Credentials (ADC)** during local developer testing.
-4. **Production Hardening**:
-   - **Token Expiry (HTTP 401)**: Returns a structured `AUTH_EXPIRED` signal prompting the user to refresh their session.
-   - **Non-Blocking Timeouts**: HTTP request timeouts (`3.05s` connect / `10s` read) prevent thread starvation under concurrent load.
-   - **API Gateway Attribution**: Includes `X-Goog-User-Project` headers for proper GCP quota/billing.
-   - **Multi-Schema JSON Parsing**: Robust fallback parsing across `derivedStructData`, `structData`, and `document.name`.
-5. **AlphaEvolve Reranking Suite (`ae_experiment/`)**: DeepMind-compliant 3-tier evolutionary search experiment package for optimizing search result relevance and context token compression.
+When building custom high-code AI agents on Google Cloud Vertex AI / Gemini Enterprise, developers encounter three major architectural blockers:
+
+| GCP Blocker / Issue ID | Problem Description | Solution in This Repository |
+| :--- | :--- | :--- |
+| **The "Connector Wall"<br>`(GCP Issue #434712760)`** | Custom ADK agents on Agent Engine do not inherit no-code Agentspace connector tools automatically. | **Custom REST Search Tool**: Directly calls `discoveryengine.googleapis.com` API endpoints. |
+| **`VertexAiSearchTool` Bugs<br>`(GCP Issues #483989453 & #897)`** | Built-in `VertexAiSearchTool` uses Service Account (ADC) credentials, returning empty metadata for SharePoint datastores. | **Bypasses `VertexAiSearchTool`**: Uses custom Bearer token HTTP authorization headers. |
+| **ACL Security Loss** | Service account queries bypass user-level SharePoint document permissions, creating security compliance risks. | **Veer Muchandi ACL Pattern**: Extracts user Azure AD OAuth tokens from `ToolContext.state` to enforce user ACLs. |
+
+---
+
+## 🏗️ Architecture & Authentication Flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as Calling End-User
+    participant GE as Gemini Enterprise (Agentspace)
+    participant ADK as Custom ADK Agent (agent.py)
+    participant Tool as SharePoint Tool (tools/sharepoint_search.py)
+    participant DE as GCP Discovery Engine REST API
+    participant SP as Microsoft SharePoint Datastore
+
+    User->>GE: Send Prompt ("Find Q3 Security Audit")
+    Note over GE: Validates User Azure AD Identity
+    GE->>ADK: Delegate Request + Inject OAuth Token into Session State
+    Note over ADK: ToolContext.state["sharepoint_oauth"] = User_Bearer_Token
+    ADK->>Tool: Invoke query_sharepoint(query, tool_context)
+    Tool->>Tool: Extract OAuth Token (or fallback to local ADC in dev)
+    Tool->>DE: POST /v1alpha/.../default_search:search<br>Header: Authorization: Bearer <User_Token><br>Header: X-Goog-User-Project: <Project_ID>
+    DE->>SP: Validate User ACL Permissions & Query Index
+    SP-->>DE: Return ACL-Filtered Excerpts
+    DE-->>Tool: JSON Search Results (derivedStructData)
+    Tool-->>ADK: Formatted Document Excerpts & Titles
+    ADK-->>User: Grounded Answer with Citations & Source Links
+```
 
 ---
 
@@ -25,6 +56,7 @@ This repository implements **Veer Muchandi's OAuth/ACL Token Propagation Pattern
 ```text
 sharepoint_adk_agent/
 ├── README.md                  # Project documentation & execution guide
+├── .gitignore                 # Python bytecode & cache exclusion rules
 ├── requirements.txt           # Python dependencies (google-adk, google-auth, requests)
 ├── agent.py                   # Core ADK RootAgent definition & modular system prompt
 ├── agent.yaml                 # Deployment manifest with authorizationConfig & Project Number
@@ -40,11 +72,23 @@ sharepoint_adk_agent/
 
 ---
 
+## 🛡️ Production Hardening Matrix
+
+| Blindspot / Risk | Mitigation Strategy | Implementation Location |
+| :--- | :--- | :--- |
+| **Token Expiry (HTTP 401)** | Catches 401 status and returns a structured `AUTH_EXPIRED` signal prompting the user to refresh session. | `tools/sharepoint_search.py` & `agent.py` |
+| **Non-Blocking HTTP Timeouts** | Explicit connect (`3.05s`) and read (`10s`) timeouts prevent thread pool starvation. | `tools/sharepoint_search.py` |
+| **API Gateway Attribution** | Sends `X-Goog-User-Project: <project_id>` header for GCP quota and billing. | `tools/sharepoint_search.py` |
+| **Multi-Schema JSON Parsing** | Multi-path extraction fallback across `derivedStructData`, `structData`, and `document.name`. | `tools/sharepoint_search.py` |
+| **Reward Hacking Prevention** | AST inspection blocks forbidden modules (`sys`, `os`, `inspect`) during evaluation. | `ae_experiment/evaluator.py` |
+
+---
+
 ## ⚙️ Environment Configuration
 
-Set the following environment variables (or define them in `agent.yaml`):
+Set the following environment variables (or configure them in `agent.yaml`):
 
-| Variable | Description | Default / Example |
+| Variable | Description | Example / Default |
 | :--- | :--- | :--- |
 | `PROJECT_ID` | GCP Project ID | `your-gcp-project-id` |
 | `PROJECT_NUMBER` | GCP Project Number (*Required for authorizationConfig*) | `123456789012` |
@@ -56,7 +100,7 @@ Set the following environment variables (or define them in `agent.yaml`):
 
 ---
 
-## 🚀 Quickstart & Testing
+## 🚀 Quickstart & Verification
 
 ### 1. Installation
 
@@ -72,7 +116,7 @@ Run the included 5-tier test suite to verify OAuth token extraction, 401 expiry 
 python3 test_agent.py
 ```
 
-Expected Output:
+Output:
 ```text
 ==================================================
    Running Production-Hardened ADK Test Suite
@@ -100,7 +144,7 @@ Expected Output:
 
 ## 🧬 AlphaEvolve Reranker Optimization
 
-To run the DeepMind AlphaEvolve evaluation benchmark on search result reranking:
+To run the DeepMind AlphaEvolve 3-tier evaluation benchmark on search result reranking:
 
 ```bash
 python3 ae_experiment/evaluator.py --program-dir ae_experiment --output-file /tmp/eval_output.json
@@ -164,3 +208,4 @@ agents-cli deploy --agent-manifest agent.yaml
 - **Veer Muchandi**: [ADK Gemini Enterprise Datastore Connector Specification](https://github.com/VeerMuchandi/rad-skills/blob/main/adk_ge_datastore_connector/SKILL.md)
 - **Lukas Geiger**: [Vertex GenAI A2A GE OAuth Reference Architecture](https://github.com/ljogeiger/VertexGenAISamples/tree/main/public/a2a_ge_oauth_example)
 - **Google ADK Framework**: [Google Agent Development Kit](https://github.com/google/adk-python)
+- **DeepMind AlphaEvolve**: [AlphaEvolve Reference Guide](https://github.com/google/alphaevolve)
