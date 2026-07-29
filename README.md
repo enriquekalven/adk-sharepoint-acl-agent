@@ -56,7 +56,7 @@ When building custom high-code AI agents on Google Cloud Vertex AI / Gemini Ente
 
 | GCP Blocker / Issue ID | Problem Description | Solution in This Repository |
 | :--- | :--- | :--- |
-| **The "Connector Wall"<br>`(GCP Issue #434712760)`** | Custom ADK agents on Agent Engine do not inherit no-code Agentspace connector tools automatically. | **Custom REST Search Tool**: Directly calls `discoveryengine.googleapis.com` API endpoints. |
+| **The "Connector Wall"<br>`(GCP Issue #434712760)`** | Custom ADK agents on Agent Engine do not inherit no-code Gemini Enterprise app connector tools automatically. | **Custom REST Search Tool**: Directly calls `discoveryengine.googleapis.com` API endpoints. |
 | **`VertexAiSearchTool` Bugs<br>`(GCP Issues #483989453 & #897)`** | Built-in `VertexAiSearchTool` uses Service Account (ADC) credentials, returning empty metadata for SharePoint datastores. | **Bypasses `VertexAiSearchTool`**: Uses custom Bearer token HTTP authorization headers. |
 | **ACL Security Loss** | Service account queries bypass user-level SharePoint document permissions, creating security compliance risks. | **Veer Muchandi ACL Pattern**: Extracts user Azure AD OAuth tokens from `ToolContext.state` to enforce user ACLs. |
 
@@ -68,7 +68,7 @@ When building custom high-code AI agents on Google Cloud Vertex AI / Gemini Ente
 sequenceDiagram
     autonumber
     actor User as Calling End-User
-    participant GE as Gemini Enterprise (Agentspace)
+    participant GE as Gemini Enterprise App
     participant ADK as Custom ADK Agent (agent.py)
     participant Tool as SharePoint Tool (tools/sharepoint_search.py)
     participant DE as GCP Discovery Engine REST API
