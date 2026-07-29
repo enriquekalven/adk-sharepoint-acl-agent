@@ -11,6 +11,45 @@ This repository implements **Veer Muchandi's OAuth/ACL Token Propagation Pattern
 
 ---
 
+## 🧩 How Other Developer Projects Can Use This Repository
+
+Any developer or enterprise team can integrate this solution into their own ADK projects in 3 ways:
+
+### **Method 1: Copy or Import the Hardened Tool (`tools/sharepoint_search.py`)** *(Fastest)*
+Copy [`tools/sharepoint_search.py`](file:///Users/enriq/.gemini/jetski/scratch/sharepoint_adk_agent/tools/sharepoint_search.py) directly into your existing ADK agent project, or install via pip:
+
+```bash
+pip install git+https://github.com/enriquekalven/adk-sharepoint-acl-agent.git
+```
+
+In your `agent.py`:
+```python
+from google.adk.agents import Agent
+from tools.sharepoint_search import query_sharepoint
+
+my_agent = Agent(
+    name="enterprise_assistant",
+    instruction="Answer questions using internal SharePoint documents.",
+    tools=[query_sharepoint]
+)
+```
+
+---
+
+### **Method 2: Use as an `agents-cli` Remote Template**
+Scaffold a brand new agent project directly from this GitHub repository using `google-agents-cli`:
+
+```bash
+agents-cli scaffold create --agent github.com/enriquekalven/adk-sharepoint-acl-agent@main my_custom_agent
+```
+
+---
+
+### **Method 3: Deploy as a Sub-Agent / Microservice**
+Deploy this agent to Vertex AI Reasoning Engine or Cloud Run using the included [`agent.yaml`](file:///Users/enriq/.gemini/jetski/scratch/sharepoint_adk_agent/agent.yaml), then connect it to your root agent via ADK Agent-to-Agent (A2A) orchestration.
+
+---
+
 ## 🛑 The Problem: Why This Repository Exists
 
 When building custom high-code AI agents on Google Cloud Vertex AI / Gemini Enterprise, developers encounter three major architectural blockers:
